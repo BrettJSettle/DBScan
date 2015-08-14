@@ -3,19 +3,13 @@ Perform a Density Based Scan on a 2 or 3-dimensional set of coordinates
 
 INTRODUCTION
 ------------
-The DBScan and DBScan3D programs perform a density based scan on an imported set of coordinated
-given an epsilon and minimum group size. The 2D analysis program provides no visual for its
-data points but saves distances, cluster information, and comparable simulated data.  The 3D
-version allows the user to iterate through the clusters and view the resulting data, as well
-as exporting the data accordingly.
+The DBScan and DBScan3D programs perform a density based scan on an imported set of coordinated given an epsilon and minimum group size. The 2D analysis program provides no visual for its data points but saves distances, cluster information, and comparable simulated data.  The 3D version allows the user to iterate through the clusters and view the resulting data, as well as exporting the data accordingly.
 
 
 REQUIREMENTS
 ------------
 
-Reliant on Python 3.4 or 2.7 (untested), preferably installed through
-Anaconda Scientific Library (http://continuum.io/downloads#py34) as well
-as several other python plugins:
+Reliant on Python 3.4 or 2.7 (untested), preferably installed through Anaconda Scientific Library (http://continuum.io/downloads#py34) as well as several other python plugins:
 
 Included in Anaconda:
 *	PyQt 		v4	(will not install with 'pip')
@@ -33,11 +27,7 @@ To install plugins, open a command prompt and type 'pip install plugin-name', us
 
 INSTALLATION
 ------------
-To install the DBScan Programs, install all of the plugins listed above
-into your python environment, download the DBScan Folder from github
-(https://github.com/BrettJSettle/DBScan) by clicking on the 'Download Zip'
-button on the right sidebar. Extract it to your computer and run by clicking the
-'run.bat' file located inside the DBScan Folder
+To install the DBScan Programs, install all of the plugins listed above into your python environment, download the DBScan Folder from github (https://github.com/BrettJSettle/DBScan) by clicking on the 'Download Zip' button on the right sidebar. Extract it to your computer and run by clicking the 'run.bat' file located inside the DBScan Folder
 
 
 USING THE PROGRAM
