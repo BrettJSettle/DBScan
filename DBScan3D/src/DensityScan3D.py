@@ -10,13 +10,11 @@ from DBAnalysis import *
 from cluster import *
 from sklearn.cluster import DBSCAN
 from scipy.spatial import ConvexHull
-from pyqtgraph.Qt.QtGui import *
+from PyQt4.QtGui import *
 app = QApplication([])
 
-w = QMainWindow()
-win = DockView(w, menu=False)
-w.setCentralWidget(win)
-w.resize(1700, 900)
+win = DockWindow(addMenu=False)
+win.resize(1700, 900)
 plot3DWidget = Plot3DWidget()
 Data = {}
 current_cluster = 0
@@ -122,16 +120,14 @@ def plotAverages():
 	plot3DWidget.addItem(gl.GLScatterPlotItem(pos=np.array(centers), color=(1, 0, 0, 1), size=20), name='Centers')
 
 
-fileMenu = QMenu('&File', win)
+fileMenu = win.menuBar().addMenu('&File')
 fileMenu.addAction(QAction('&Import Data', fileMenu, triggered = plot3DWidget.load_file))
 fileMenu.addAction(QAction('&Close', fileMenu, triggered = win.close))
-win.menu.addMenu(fileMenu)
-clusterMenu = QMenu('Cluster Options', win)
+clusterMenu = win.menuBar().addMenu('Cluster Options')
 clusterMenu.addAction(QAction('Cluster all plotted', clusterMenu, triggered=get_analysis_params))
 clusterMenu.addAction(QAction('Export Clusters', clusterMenu, triggered=export_clusters))
 clusterMenu.addAction(QAction('Plot Centers', clusterMenu, triggered=plotAverages))
-win.menu.addMenu(clusterMenu)
-plot3DDock = win.addWidget(plot3DWidget, name="3D Plot Data", size=(10, 6), removable=False, renamable=False)
+plot3DDock = win.addWidget(plot3DWidget, name="3D Plot Data", size=(10, 6), renamable=False)
 clusterWidget = OptionsWidget('Cluster Options', \
 	[{'key': 'Next Cluster', 'action': lambda : moveCluster(1)}, \
 	{'key': 'Previous Cluster', 'action': lambda : moveCluster(-1)}, \
@@ -143,5 +139,5 @@ clusterWidget.addWidget(tableWidget, (2, 0, 5, 4))
 win.addWidget(QLabel("Plot 3D Widget Controls\n\tArrows or Left click and drag to rotate camera\n\tMiddle click and drag to pan\n\
 \tScroll mouse wheel to zoom\n\tRight Click for plotted item options"), name='Plot Control Dock', where=['bottom', plot3DDock], size=(1, 1))
 
-w.show()
+win.show()
 sys.exit(app.exec_())

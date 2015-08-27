@@ -1,3 +1,3 @@
 @echo off
-python Main.py
+python Main.py -no3D
 del /S *.pyc
