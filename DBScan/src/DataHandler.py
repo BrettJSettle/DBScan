@@ -4,17 +4,12 @@
 @Lab: Parker Lab
 @Date: August 6, 2015
 """
-from os import path, makedirs
 from basics import *
-from glob import glob
+from BioDocks import getDirectory
 
-def toFiles(fileName, clusters, centers, areas, distances, closests):
+def toFiles(directory, clusters, centers, areas, distances, closests):
     # r = [borders, centers, distances, closests, areasConvex, areasGrid, areasConcave]
     nonoise = [i for cluster in clusters for i in cluster] # data without noise list for output
-
-    directory = path.abspath(path.join(path.dirname( __file__), path.basename(fileName))) # open the directory
-    if not path.exists(directory):
-        makedirs(directory)
 
     with open(directory + "/DBResults.txt", "w") as outFile:
         outFile.write("X\tY\tNo Noise X\tNo Noise Y\tCenters X\tCenters Y\n")

@@ -12,7 +12,6 @@ import numpy as np
 
 def scan(data, epsi, minP):
     labels = DBSCAN(eps=epsi, min_samples=minP).fit_predict(data)
-    print(labels)
     print('%d Clusters found' % max(labels))
     clusters = []
     for i in range(max(labels) + 1):

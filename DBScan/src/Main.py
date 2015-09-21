@@ -21,7 +21,7 @@ def prepare(d):
 
     for f in fs:
         name = os.path.basename(f)[:-4]
-        data = file_to_arr(f)
+        data = fileToArray(f)
         if type(data) == dict:
             op = ParameterWidget('Where are the X and Y coordinates', [{'key': 'Xc', 'name': 'X Coordinate', 'value': sort_closest(data.keys(), 'Xc')},\
                 {'key': 'Yc', 'name': 'Y Coordinate', 'value': sort_closest(data.keys(), 'Yc')}], doneButton=True)
@@ -48,11 +48,14 @@ def dbscan(name, points, eps, minP):
         distances.extend(getDistances(centers[i], centers[i + 1:]))
         closests.append(getClosest(centers[i], centers))
     print("Saving Results...")
-    toFiles(name, clusters, centers, areas, distances, closests)
+    directory = getDirectory("Choose/create a folder to store the ", initial=name)
+    if directory == "":
+        return
+    toFiles(directory, clusters, centers, areas, distances, closests)
     print("Simulating results...")
     pnts = len(clusters)
     x, y = np.transpose(points)
-    gen(pnts, [min(x), max(x)], [min(y), max(y)], name)
+    gen(pnts, [min(x), max(x)], [min(y), max(y)], directory)
     print("Done")
 
 ops = [{'key': 'Select files', 'type': 'action', 'value' : lambda : None},\
