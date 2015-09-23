@@ -11,6 +11,13 @@ def toFiles(directory, clusters, centers, areas, distances, closests):
     # r = [borders, centers, distances, closests, areasConvex, areasGrid, areasConcave]
     nonoise = [i for cluster in clusters for i in cluster] # data without noise list for output
 
+    with open(directory + "/Clusters.txt", "w") as outFile:
+        outFile.write("X\tY\n")
+        for cluster in clusters:
+            for p in cluster:
+                outFile.write("%.3f\t%.3f\n" % (p[0], p[1]))
+            outFile.write('\n')
+
     with open(directory + "/DBResults.txt", "w") as outFile:
         outFile.write("X\tY\tNo Noise X\tNo Noise Y\tCenters X\tCenters Y\n")
         for i in range(len(nonoise)):

@@ -11,6 +11,8 @@ from cluster import *
 from sklearn.cluster import DBSCAN
 from scipy.spatial import ConvexHull
 from PyQt4.QtGui import *
+import pyqtgraph.opengl as gl
+
 app = QApplication([])
 
 win = DockWindow(addMenu=False)
@@ -86,7 +88,7 @@ def get_analysis_params():
 	Data['points'] = get_all_pts()
 	_, _, zs = zip(*Data['points'])
 	Data.update({'Epsilon': abs(np.max(zs) - np.min(zs)), 'Minimum Cluster Size': 4})
-	win.p = ParameterWidget('Options for Density Based Scan', [{'key': name, "value" : Data[name]} for name in \
+	win.p = ParameterWidget('Options for Density Based Scan', [{'key': name, "value" : float(Data[name])} for name in \
 		('Epsilon', 'Minimum Cluster Size')], about = \
 '''    The parameters below are used to run a density based scan on \n\
 the 3d scattered data. \n\n\
@@ -127,7 +129,7 @@ clusterMenu = win.menuBar().addMenu('Cluster Options')
 clusterMenu.addAction(QAction('Cluster all plotted', clusterMenu, triggered=get_analysis_params))
 clusterMenu.addAction(QAction('Export Clusters', clusterMenu, triggered=export_clusters))
 clusterMenu.addAction(QAction('Plot Centers', clusterMenu, triggered=plotAverages))
-plot3DDock = win.addWidget(plot3DWidget, name="3D Plot Data", size=(10, 6), renamable=False)
+plot3DDock = win.addWidget(plot3DWidget, size=(10, 6))
 clusterWidget = OptionsWidget('Cluster Options', \
 	[{'key': 'Next Cluster', 'action': lambda : moveCluster(1)}, \
 	{'key': 'Previous Cluster', 'action': lambda : moveCluster(-1)}, \
@@ -137,7 +139,7 @@ clusterWidget.valueChanged.connect(lambda f: set_min_size(f['Minimum Cluster Siz
 tableWidget = DataWidget()
 clusterWidget.addWidget(tableWidget, (2, 0, 5, 4))
 win.addWidget(QLabel("Plot 3D Widget Controls\n\tArrows or Left click and drag to rotate camera\n\tMiddle click and drag to pan\n\
-\tScroll mouse wheel to zoom\n\tRight Click for plotted item options"), name='Plot Control Dock', where=['bottom', plot3DDock], size=(1, 1))
+\tScroll mouse wheel to zoom\n\tRight Click for plotted item options"), where=['bottom', plot3DDock], size=(1, 1))
 
 win.show()
 sys.exit(app.exec_())
