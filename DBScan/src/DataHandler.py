@@ -13,10 +13,11 @@ def toFiles(directory, clusters, centers, areas, distances, closests):
 
     with open(directory + "/Clusters.txt", "w") as outFile:
         outFile.write("X\tY\n")
-        for cluster in clusters:
+        for i, cluster in enumerate(clusters):
             for p in cluster:
                 outFile.write("%.3f\t%.3f\n" % (p[0], p[1]))
-            outFile.write('\n')
+            if i < len(clusters)-1:
+                outFile.write('\n')
 
     with open(directory + "/DBResults.txt", "w") as outFile:
         outFile.write("X\tY\tNo Noise X\tNo Noise Y\tCenters X\tCenters Y\n")
