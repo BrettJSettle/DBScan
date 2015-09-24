@@ -46,7 +46,7 @@ def analyze(d):
 	global Data
 	Data.update(d)
 	print('Clustering Data...')
-	scanner = DBSCAN(eps = Data['Epsilon'], min_samples=Data['Minimum Cluster Size'])
+	scanner = DBSCAN(eps = Data['Epsilon'], min_samples=1)
 	db = scanner.fit(Data['points'])
 	clusterWidget.update({'Minimum Cluster Size': Data['Minimum Cluster Size']})
 
@@ -55,7 +55,9 @@ def analyze(d):
 	# Number of clusters in labels, ignoring noise if present.
 	Data['cluster_count'] = len(set(db.labels_)) - (1 if -1 in db.labels_ else 0)
 	for i in range(Data['cluster_count']):
-		Data['all_clusters'].append(Cluster(np.array([Data['points'][j] for j in np.where(db.labels_ == i)[0]])))
+		cl = Cluster(np.array([Data['points'][j] for j in np.where(db.labels_ == i)[0]]))
+		if len(cl) >= Data['Minimum Cluster Size']:
+			Data['all_clusters'].append(cl)
 	print('Found %d clusters' % Data['cluster_count'])
 	set_min_size(Data['Minimum Cluster Size'])
 	win.addWidget(clusterWidget, name='Buttons', size=(1, 6), renamable=False, where=('right', plot3DDock))

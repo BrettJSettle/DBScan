@@ -11,14 +11,15 @@ from sklearn.cluster import DBSCAN
 import numpy as np
 
 def scan(data, epsi, minP):
-    labels = DBSCAN(eps=epsi, min_samples=minP).fit_predict(data)
+    labels = DBSCAN(eps=epsi, min_samples=1).fit_predict(data)
     print('%d Clusters found' % max(labels))
     clusters = []
     for i in range(max(labels) + 1):
         clust = []
         for p in np.where(labels == i)[0]:
            clust.append(data[p])
-        clusters.append(clust)
+        if len(clust) > minP:
+            clusters.append(clust)
     return clusters
 
 def distance(p1, p2):
