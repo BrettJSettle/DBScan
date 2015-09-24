@@ -19,8 +19,6 @@ def scan(data, epsi, minP):
         for p in np.where(labels == i)[0]:
            clust.append(data[p])
         clusters.append(clust)
-    epsi = epsi
-    minP = minP
     return clusters
 
 def distance(p1, p2):
