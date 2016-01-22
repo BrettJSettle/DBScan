@@ -5,13 +5,81 @@
 @Date: August 6, 2015
 """
 import os,sys,inspect
-from BioDocks import *
 from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 app = QApplication(sys.argv)
-from Analyzer import *
-from DataHandler import *
-from RandDists import gen
+import global_vars as g
+g.settings = g.Settings()
+import pyqtgraph as pg
+from FileReader import file_to_array
+#from Analyzer import *
+#from DataHandler import *
+#from RandDists import gen
 
+def dbscan():
+    newLayout = QGridLayout()
+    win.setLayout(newLayout)
+
+def add_file(filename):
+    for i in range(file_list.count()):
+        if os.path.samefile(file_list.item(i).text(), filename):
+            return
+    file_list.addItem(QListWidgetItem(filename))
+
+def get_files():
+    files = QFileDialog.getOpenFileNames(win, caption="Select point files to cluster", directory=g.settings['last_dir'])
+    if len(files) == 0:
+        return
+    g.settings['last_dir'] = os.path.dirname(files[0])
+    for i in files:
+        add_file(i)
+
+win = QWidget()
+win.setAcceptDrops(True)
+ly = QFormLayout(win)
+file_list = QListWidget()
+add_files_button = QPushButton("Add Files")
+add_files_button.pressed.connect(get_files)
+epsilon_spin = pg.SpinBox(value=g.settings['epsilon'])
+min_neighbors_spin = pg.SpinBox(value=g.settings['min_neighbors'])
+min_density_spin = pg.SpinBox(value=g.settings['min_density'])
+clusterButton = QPushButton("Start Clustering")
+clusterButton.pressed.connect(dbscan)
+
+ly.addRow("Files", file_list)
+ly.addWidget(add_files_button)
+ly.addRow("Epsilon", epsilon_spin)
+ly.addRow("Minimum Neighbors to consider point", min_neighbors_spin)
+ly.addRow("Minimum Cluster Density", min_density_spin)
+ly.addWidget(clusterButton)
+
+class MainWindowEventEater(QObject):
+    def __init__(self,parent=None):
+        QObject.__init__(self,parent)
+    def eventFilter(self,obj,event):
+        if (event.type()==QEvent.DragEnter):
+            if event.mimeData().hasUrls():
+                event.accept()   # must accept the dragEnterEvent or else the dropEvent can't occur !!!
+            else:
+                event.ignore()
+        if (event.type() == QEvent.Drop):
+            if event.mimeData().hasUrls():   # if file or link is dropped
+                url = event.mimeData().urls()[0]   # get first url
+                filename=url.toString()
+                filename=str(filename)
+                filename=filename.split('file:///')[1]
+                g.settings['last_dir'] = os.path.dirname(filename)
+                add_file(filename)
+                  #This fails on windows symbolic links.  http://stackoverflow.com/questions/15258506/os-path-islink-on-windows-with-python
+                event.accept()
+            else:
+                event.ignore()
+        return False # lets the event continue to the edit
+mainWindowEventEater = MainWindowEventEater()
+win.installEventFilter(mainWindowEventEater)
+
+win.show()
+'''
 def prepare(d):
     global op
     fs = d['Files'].split(', ')
@@ -65,6 +133,7 @@ op.parameters.param('Select files').sigActivated.connect(lambda : op.parameters.
     ', '.join(getFilenames(title='Select text files to perform Density Scan', filter='Text Files (*.txt)'))))
 op.done.connect(prepare)
 op.show()
+'''
 if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
     QApplication.instance().exec_()
     QApplication.closeAllWindows()
