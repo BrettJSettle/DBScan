@@ -68,7 +68,7 @@ def read_files(filenames):
     win.statusBar().showMessage("%d points read (%s s)" % (len(x), time.time() - start))
     return np.vstack([x, y]).T
 
-def save_clusters(clusters):
+def save(clusters):
     d = QFileDialog.getExistingDirectory(caption="Save DBScan results to a directory. Create or select a folder", directory=g.settings['last_dir'])
     t = time.time()
     save_clusters(os.path.join(d, "Clusters.txt"), clusters)
@@ -98,7 +98,7 @@ def main():
         if i % 10 == 0:
             win.statusBar().showMessage("Analyzed %d clusters of %d" % (i, len(clusts)))
     win.statusBar().showMessage("Clusters Analyzed (%s s)" % (time.time() - t))
-    save_clusters(clusters)
+    save(clusters)
     clusterButton.setEnabled(True)
 
 def add_file(filename):
