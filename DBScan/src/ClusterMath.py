@@ -57,6 +57,18 @@ def concaveArea(points):
     pts = np.array([points[i] for i in outerwalls])
     return sum(map(lambda vs: getTriangleArea(*[points[i] for i in vs]), verts))
 
+def gridArea(points):
+    dist = averageDistance(points)
+    x, y = np.transpose([(p[0], p[1]) for p in points])
+    area = 0
+
+    for i in np.arange(min(x), max(x), dist):
+        for j in np.arange(min(y), max(y), dist):
+            if any([inSquare(p, i, j, dist) for p in points]):
+                area += dist ** 2
+                continue
+    return area
+
 
 def getCenter(clust):
     '''get center point of cluster'''

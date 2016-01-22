@@ -22,6 +22,7 @@ class Cluster():
         self.density = len(points)
         self.center = getCenter(points)
         self.area = area(points, g.settings['epsilon'])
+        self.gridArea = gridArea(points)
         
 def scan(data, epsi, minP, minDensity):
     labels = DBSCAN(eps=epsi, min_samples=minP).fit_predict(data)
@@ -39,17 +40,15 @@ def scan(data, epsi, minP, minDensity):
     return clusters
 
 def save_clusters(filename, clusters):
-    data = np.array([[cluster.center[0], cluster.center[1], cluster.density, cluster.area] for cluster in clusters])
-    np.savetxt(filename, data, header="Center X\tCenter Y\tDensity\tArea", delimiter='\t', fmt="%.4f")
+    data = np.array([[cluster.center[0], cluster.center[1], cluster.density, cluster.area, cluster.gridArea] for cluster in clusters])
+    np.savetxt(filename, data, header="Center X\tCenter Y\tDensity\tArea\tArea Grid", delimiter='\t', fmt="%.4f")
 
 def save_distances(filename, centers):
     data = getAllDistances(centers)
     np.savetxt(filename, data, header="Distances", delimiter='\t', fmt="%.4f")
 
 def simulateCenters(filename, count, xrng, yrng):
-    x = [np.random.uniform(*xrng) for i in range(count)]
-    y = [np.random.uniform(*yrng) for i in range(count)]
-    pts = np.vstack((x, y))
+    pts = [[np.random.uniform(*xrng), np.random.uniform(*yrng)] for i in range(count)]
     save_distances(filename, pts)
 
 def read_files(filenames):
