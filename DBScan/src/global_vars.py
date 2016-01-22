@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 01 11:28:38 2014
-
-@author: Kyle Ellefsen
-"""
-
 import sys
 if sys.version_info.major==2:
     import cPickle as pickle # pickle serializes python objects so they can be saved persistantly.  It converts a python object into a savable data structure
@@ -23,7 +16,10 @@ class Settings:
             self.d['epsilon']=30 
             self.d['min_neighbors']=4
             self.d['min_density'] = 5
-        self.d['show_windows'] = True
+
+    def update(self, **kwargs):
+        self.d.update(kwargs)
+
     def __getitem__(self, item):
         try:
             self.d[item]
@@ -35,4 +31,5 @@ class Settings:
         self.save()
     def save(self):
         '''save to a config file.'''
-        pickle.dump(self.d, open( self.config_file, "wb" ))
+        with open( self.config_file, "wb" ) as outf:
+            pickle.dump(self.d, outf)

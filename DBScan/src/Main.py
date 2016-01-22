@@ -7,24 +7,97 @@
 import os,sys,inspect
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-app = QApplication(sys.argv)
 import global_vars as g
 g.settings = g.Settings()
 import pyqtgraph as pg
 from FileReader import file_to_array
-#from Analyzer import *
-#from DataHandler import *
-#from RandDists import gen
+import time
+import numpy as np
+from sklearn.cluster import DBSCAN
+from ClusterMath import *
 
-def dbscan():
-    newLayout = QGridLayout()
-    win.setLayout(newLayout)
+class Cluster():
+    def __init__(self, points):
+        self.points = points
+        self.density = len(points)
+        self.center = getCenter(points)
+        self.area = area(points, g.settings['epsilon'])
+        
+def scan(data, epsi, minP, minDensity):
+    labels = DBSCAN(eps=epsi, min_samples=minP).fit_predict(data)
+    win.statusBar().showMessage('%d Clusters found. Removing small clusters...' % max(labels))
+    clusters = []
+    rejected = 0
+    for i in range(max(labels) + 1):
+        clust = []
+        for p in np.where(labels == i)[0]:
+           clust.append(data[p])
+        if len(clust) > minDensity:
+            clusters.append(clust)
+            rejected += 1
+    win.statusBar().showMessage('%d points -> %d Clusters after excluding %d small clusters.' % (len(data), max(labels), rejected))
+    return clusters
+
+def save_clusters(filename, clusters):
+    data = np.array([[cluster.center[0], cluster.center[1], cluster.density, cluster.area] for cluster in clusters])
+    np.savetxt(filename, data, header="Center X\tCenter Y\tDensity\tArea", delimiter='\t', fmt="%.4f")
+
+def save_distances(filename, centers):
+    data = getAllDistances(centers)
+    np.savetxt(filename, data, header="Distances", delimiter='\t', fmt="%.4f")
+
+def simulateCenters(filename, count, xrng, yrng):
+    x = [np.random.uniform(*xrng) for i in range(count)]
+    y = [np.random.uniform(*yrng) for i in range(count)]
+    pts = np.vstack((x, y))
+    save_distances(filename, pts)
+
+def read_files(filenames):
+    x = []
+    y = []
+    start = time.time()
+    for fname in filenames:
+        win.statusBar().showMessage("Gathering points from %s..." % fname)
+        try:
+            d = file_to_array(fname, columns=['Xc', 'Yc'])
+            x.extend(d['Xc'])
+            y.extend(d['Yc'])
+        except Exception as e:
+            print("Could not read points from %s\n%s" % (fname, e))
+    win.statusBar().showMessage("%d points read (%s s)" % (len(x), time.time() - start))
+    return np.vstack([x, y]).T
+
+def main():
+    g.settings.update(epsilon=epsilon_spin.value(), min_neighbors=min_neighbors_spin.value(), min_density=min_density_spin.value())
+    fnames = [file_list.item(i).text() for i in range(file_list.count())]
+    points = read_files(fnames)
+    if len(points) == 0:
+        return
+    clusterButton.setEnabled(False)
+    clusts = scan(points, g.settings['epsilon'], g.settings['min_neighbors'], g.settings['min_density'])
+    clusters = []
+    for i in range(len(clusts)):
+        clusters.append(Cluster(clusts[i]))
+        QApplication.processEvents()
+        if i % 10 == 0:
+            win.statusBar().showMessage("Analyzed %d clusters of %d" % (i, len(clusts)))
+    win.statusBar().showMessage("Clusters Analyzed")
+    d = QFileDialog.getExistingDirectory(caption="Save DBScan results to a directory. Create or select a folder", directory=g.settings['last_dir'])
+    save_clusters(os.path.join(d, "Clusters.txt"), clusters)
+    save_distances(os.path.join(d, "Distances.txt"), [c.center for c in clusters])
+    if simulateCheck.isChecked():
+        simulateCenters(os.path.join(d, "Simulated_distances.txt"), len(points), [min(points[0]), max(points[0])], [min(points[1]), max(points[1])])
+    clusterButton.setEnabled(True)
 
 def add_file(filename):
     for i in range(file_list.count()):
         if os.path.samefile(file_list.item(i).text(), filename):
             return
-    file_list.addItem(QListWidgetItem(filename))
+    item = QListWidgetItem(filename)
+    file_list.addItem(item)
+
+def remove_file(item):
+    file_list.takeItem(file_list.row(item))
 
 def get_files():
     files = QFileDialog.getOpenFileNames(win, caption="Select point files to cluster", directory=g.settings['last_dir'])
@@ -34,24 +107,9 @@ def get_files():
     for i in files:
         add_file(i)
 
-win = QWidget()
-win.setAcceptDrops(True)
-ly = QFormLayout(win)
-file_list = QListWidget()
-add_files_button = QPushButton("Add Files")
-add_files_button.pressed.connect(get_files)
-epsilon_spin = pg.SpinBox(value=g.settings['epsilon'])
-min_neighbors_spin = pg.SpinBox(value=g.settings['min_neighbors'])
-min_density_spin = pg.SpinBox(value=g.settings['min_density'])
-clusterButton = QPushButton("Start Clustering")
-clusterButton.pressed.connect(dbscan)
-
-ly.addRow("Files", file_list)
-ly.addWidget(add_files_button)
-ly.addRow("Epsilon", epsilon_spin)
-ly.addRow("Minimum Neighbors to consider point", min_neighbors_spin)
-ly.addRow("Minimum Cluster Density", min_density_spin)
-ly.addWidget(clusterButton)
+def close_and_save(ev):
+    g.settings.save()
+    ev.accept()
 
 class MainWindowEventEater(QObject):
     def __init__(self,parent=None):
@@ -70,70 +128,41 @@ class MainWindowEventEater(QObject):
                 filename=filename.split('file:///')[1]
                 g.settings['last_dir'] = os.path.dirname(filename)
                 add_file(filename)
-                  #This fails on windows symbolic links.  http://stackoverflow.com/questions/15258506/os-path-islink-on-windows-with-python
                 event.accept()
             else:
                 event.ignore()
         return False # lets the event continue to the edit
+
 mainWindowEventEater = MainWindowEventEater()
-win.installEventFilter(mainWindowEventEater)
 
-win.show()
-'''
-def prepare(d):
-    global op
-    fs = d['Files'].split(', ')
-    if len(fs) == 0:
-        print("No files found")
-        sys.exit(0)
+if __name__ == '__main__':
+    win = QMainWindow()
+    widg = QWidget()
+    win.setCentralWidget(widg)
+    win.setAcceptDrops(True)
+    ly = QFormLayout(widg)
+    file_list = QListWidget()
+    file_list.contextMenuEvent = lambda ev: get_files()
+    file_list.itemDoubleClicked.connect(remove_file)
+    add_files_button = QPushButton("Add Files")
+    add_files_button.pressed.connect(get_files)
+    epsilon_spin = pg.SpinBox(value=g.settings['epsilon'])
+    min_neighbors_spin = pg.SpinBox(value=g.settings['min_neighbors'], int=True, step=1)
+    min_density_spin = pg.SpinBox(value=g.settings['min_density'], int=True, step=1)
+    simulateCheck = QCheckBox("Simulate Center Proximities")
+    clusterButton = QPushButton("Start Clustering")
+    clusterButton.pressed.connect(main)
 
-    for f in fs:
-        name = os.path.basename(f)[:-4]
-        data = fileToArray(f)
-        if type(data) == dict:
-            op = ParameterWidget('Where are the X and Y coordinates', [{'key': 'Xc', 'name': 'X Coordinate', 'value': sort_closest(data.keys(), 'Xc')},\
-                {'key': 'Yc', 'name': 'Y Coordinate', 'value': sort_closest(data.keys(), 'Yc')}], doneButton=True)
-            op.done.connect(lambda d2: dbscan(name, np.transpose([data[d2['Xc']], data[d2['Yc']]]), d['Epsilon'], d['minP']))
-            op.show()
-        else:
-            dbscan(name, np.transpose(data[0], data[1]), d['Epsilon'], d['minP'])
+    ly.addRow("Files", file_list)
+    ly.addWidget(add_files_button)
+    ly.addRow("Epsilon", epsilon_spin)
+    ly.addRow("Minimum neighbors to consider a point", min_neighbors_spin)
+    ly.addRow("Minimum Cluster Density", min_density_spin)
+    ly.addWidget(simulateCheck)
+    ly.addWidget(clusterButton)
 
-    with open("ParameterLog.txt", "w+") as outFile:
-        outFile.write("\n%d\t%d\t" % (d['Epsilon'], d['minP']))
-
-def dbscan(name, points, eps, minP):
-    clusters = scan(points, eps, minP)
-    if len(clusters) == 0:
-        print('No Clusters Found')
-        return
-    print("Analyzing Areas...")
-    areas = [concaveArea(clust) for clust in clusters]
-    print("Analyzing Centers...")
-    centers = [getCenter(clust) for clust in clusters]
-    distances = []
-    closests = []
-    for i in range(len(centers)):
-        distances.extend(getDistances(centers[i], centers[i + 1:]))
-        closests.append(getClosest(centers[i], centers))
-    print("Saving Results...")
-    directory = getDirectory("Choose/create a folder to store the ", initial=name)
-    if directory == "":
-        return
-    toFiles(directory, clusters, centers, areas, distances, closests)
-    print("Simulating results...")
-    pnts = len(clusters)
-    x, y = np.transpose(points)
-    gen(pnts, [min(x), max(x)], [min(y), max(y)], directory)
-    print("Done")
-
-ops = [{'key': 'Select files', 'type': 'action', 'value' : lambda : None},\
-{'key': 'Files', 'value':''}, {'key': 'Epsilon', 'value': 30}, {'key': 'minP', 'name': 'Minimum Cluster Size', 'value': 10}]
-op = ParameterWidget('DBScan Options', ops, doneButton=True)
-op.parameters.param('Select files').sigActivated.connect(lambda : op.parameters.__setitem__('Files', \
-    ', '.join(getFilenames(title='Select text files to perform Density Scan', filter='Text Files (*.txt)'))))
-op.done.connect(prepare)
-op.show()
-'''
-if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+    win.installEventFilter(mainWindowEventEater)
+    win.setWindowTitle("DBScan Clustering")
+    win.closeEvent = close_and_save
+    win.show()
     QApplication.instance().exec_()
-    QApplication.closeAllWindows()

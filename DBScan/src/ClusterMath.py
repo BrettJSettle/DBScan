@@ -1,11 +1,9 @@
-"""
-@author: Brett Settle
-@Department: UCI Neurobiology and Behavioral Science
-@Lab: Parker Lab
-@Date: August 6, 2015
-"""
-from basics import *
+
+from collections import namedtuple
+from math import sqrt, acos
+import numpy as np
 from scipy.spatial import Delaunay
+from shapely.geometry import Point
 
 def distance(ptA, ptB):
     return np.linalg.norm(np.subtract(ptA, ptB))
@@ -22,8 +20,13 @@ def order_walls(walls):
 def getTriangleArea(A, B, C):
     return .5 * abs(A[0]*(B[1] - C[1]) + B[0]*(C[1] - A[1]) + C[0]*(A[1] - B[1]))
 
+def area(points, epsilon):
+    shape = None
+    for x, y in points:
+        shape = Point(x, y).buffer(epsilon) if shape == None else (shape | Point(x, y).buffer(epsilon))
+    return shape.area    
+
 def concaveArea(points):
-    print(len(points))
     if len(points) < 3:
         return 0
     tri = Delaunay(points)
@@ -57,6 +60,20 @@ def concaveArea(points):
 
 def getCenter(clust):
     '''get center point of cluster'''
+    return np.average(clust, 0)
     Xtot = sum(map(lambda f: f[0], clust))
     Ytot = sum(map(lambda f: f[1], clust))
     return [Xtot / len(clust), Ytot / len(clust)]
+
+def getAllDistances(ps):
+    distances = []
+    for i in range(len(ps)):
+        distances.extend([a[1] for a in getDistances(ps[i], ps[i + 1:])])
+    return distances
+
+def getDistances(p1, ps):
+    '''yields distances between all center points'''
+    return [(p2, distance(p1, p2)) for p2 in ps if not (p1[0] == p2[0] and p1[1] == p2[1])]
+
+def getClosest(center, centers):
+    return sorted(getDistances(center, centers), key=lambda i: -i[1])[0]

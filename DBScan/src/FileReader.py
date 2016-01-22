@@ -42,11 +42,12 @@ def get_format(name):
 			print(line)
 	return form
 
-def file_to_array(filename):
+def file_to_array(filename, columns=[]):
 	lines = [line.strip() for line in open(filename).readlines()]
 	names = lines[0].split('\t')
 	formats = [get_format(i) for i in names]
-	data = np.loadtxt(filename, dtype={'names': names, 'formats': formats}, delimiter='\t', skiprows=1)
+	cols = None if len(columns) == 0 else [names.index(i) for i in columns]
+	data = np.loadtxt(filename, dtype={'names': names, 'formats': formats}, delimiter='\t', skiprows=1, usecols = cols)
 	return data
 
 app = QApplication([])
