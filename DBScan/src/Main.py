@@ -48,7 +48,9 @@ def save_distances(filename, centers):
     np.savetxt(filename, data, header="Distances", delimiter='\t', fmt="%.4f")
 
 def simulateCenters(filename, count, xrng, yrng):
-    pts = [[np.random.uniform(*xrng), np.random.uniform(*yrng)] for i in range(count)]
+    pts = np.random.random((count, 2))
+    pts[:, 0] = pts[:, 0] * (xrng[1] - xrng[0]) + xrng[0]
+    pts[:, 1] = pts[:, 1] * (yrng[1] - yrng[0]) + yrng[0]
     save_distances(filename, pts)
 
 def read_files(filenames):
@@ -66,12 +68,27 @@ def read_files(filenames):
     win.statusBar().showMessage("%d points read (%s s)" % (len(x), time.time() - start))
     return np.vstack([x, y]).T
 
+def save_clusters(clusters):
+    d = QFileDialog.getExistingDirectory(caption="Save DBScan results to a directory. Create or select a folder", directory=g.settings['last_dir'])
+    t = time.time()
+    save_clusters(os.path.join(d, "Clusters.txt"), clusters)
+    win.statusBar().showMessage("Cluster Data saved. Calculating distances...")
+    centers = [c.center for c in clusters]
+    save_distances(os.path.join(d, "Distances.txt"), centers)
+    win.statusBar().showMessage("Distances saved.")
+    x, y = np.transpose(centers)
+    if simulateCheck.isChecked():
+        win.statusBar().showMessage("Generating simulated centers...")
+        simulateCenters(os.path.join(d, "Simulated_distances.txt"), len(centers), [min(x), max(x)], [min(y), max(y)])
+    win.statusBar().showMessage("DBScan Complete. (%s s)" % (time.time() - t))
+
 def main():
     g.settings.update(epsilon=epsilon_spin.value(), min_neighbors=min_neighbors_spin.value(), min_density=min_density_spin.value())
     fnames = [file_list.item(i).text() for i in range(file_list.count())]
     points = read_files(fnames)
     if len(points) == 0:
         return
+    t = time.time()
     clusterButton.setEnabled(False)
     clusts = scan(points, g.settings['epsilon'], g.settings['min_neighbors'], g.settings['min_density'])
     clusters = []
@@ -80,12 +97,8 @@ def main():
         QApplication.processEvents()
         if i % 10 == 0:
             win.statusBar().showMessage("Analyzed %d clusters of %d" % (i, len(clusts)))
-    win.statusBar().showMessage("Clusters Analyzed")
-    d = QFileDialog.getExistingDirectory(caption="Save DBScan results to a directory. Create or select a folder", directory=g.settings['last_dir'])
-    save_clusters(os.path.join(d, "Clusters.txt"), clusters)
-    save_distances(os.path.join(d, "Distances.txt"), [c.center for c in clusters])
-    if simulateCheck.isChecked():
-        simulateCenters(os.path.join(d, "Simulated_distances.txt"), len(points), [min(points[0]), max(points[0])], [min(points[1]), max(points[1])])
+    win.statusBar().showMessage("Clusters Analyzed (%s s)" % (time.time() - t))
+    save_clusters(clusters)
     clusterButton.setEnabled(True)
 
 def add_file(filename):

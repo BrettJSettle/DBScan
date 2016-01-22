@@ -57,6 +57,9 @@ def concaveArea(points):
     pts = np.array([points[i] for i in outerwalls])
     return sum(map(lambda vs: getTriangleArea(*[points[i] for i in vs]), verts))
 
+def inSquare(p, x, y, s):
+    return x <= p[0] <= x + s and y <= p[1] <= y + s
+
 def gridArea(points):
     dist = averageDistance(points)
     x, y = np.transpose([(p[0], p[1]) for p in points])
@@ -68,6 +71,19 @@ def gridArea(points):
                 area += dist ** 2
                 continue
     return area
+
+def boxArea(points):
+    x, y = np.transpose([(p[0], p[1]) for p in points])
+    width = max(x) - min(x)
+    height = max(y) - min(y)
+    return width * height
+
+def averageDistance(points):
+    dists = []
+    for i in range(len(points)):
+        for j in range(i+1, len(points)):
+            dists.append(np.linalg.norm(points[i] - points[j]))
+    return sum(dists) / len(dists)
 
 
 def getCenter(clust):
