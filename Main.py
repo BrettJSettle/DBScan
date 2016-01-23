@@ -83,6 +83,7 @@ def save(clusters):
     win.statusBar().showMessage("DBScan Complete. (%s s)" % (time.time() - t))
 
 def main():
+    win.setCentralWidget(widg2)
     g.settings.update(epsilon=epsilon_spin.value(), min_neighbors=min_neighbors_spin.value(), min_density=min_density_spin.value())
     fnames = [file_list.item(i).text() for i in range(file_list.count())]
     points = read_files(fnames)
