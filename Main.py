@@ -15,6 +15,9 @@ import time
 import numpy as np
 from sklearn.cluster import DBSCAN
 from ClusterMath import *
+from widgets import PointWidget
+from Canvas2D import Canvas
+from Visuals import PointVisual
 
 class Cluster():
     def __init__(self, points):
@@ -26,7 +29,7 @@ class Cluster():
         
 def scan(data, epsi, minP, minDensity):
     labels = DBSCAN(eps=epsi, min_samples=minP).fit_predict(data)
-    win.statusBar().showMessage('%d Clusters found. Removing small clusters...' % max(labels))
+    g.win.statusBar().showMessage('%d Clusters found. Removing small clusters...' % max(labels))
     clusters = []
     rejected = 0
     for i in range(max(labels) + 1):
@@ -36,7 +39,7 @@ def scan(data, epsi, minP, minDensity):
         if len(clust) > minDensity:
             clusters.append(clust)
             rejected += 1
-    win.statusBar().showMessage('%d points -> %d Clusters after excluding %d small clusters.' % (len(data), max(labels), rejected))
+    g.win.statusBar().showMessage('%d points -> %d Clusters after excluding %d small clusters.' % (len(data), max(labels), rejected))
     return clusters
 
 def save_clusters(filename, clusters):
@@ -58,32 +61,31 @@ def read_files(filenames):
     y = []
     start = time.time()
     for fname in filenames:
-        win.statusBar().showMessage("Gathering points from %s..." % fname)
+        g.win.statusBar().showMessage("Gathering points from %s..." % fname)
         try:
             d = file_to_array(fname, columns=['Xc', 'Yc'])
             x.extend(d['Xc'])
             y.extend(d['Yc'])
         except Exception as e:
             print("Could not read points from %s\n%s" % (fname, e))
-    win.statusBar().showMessage("%d points read (%s s)" % (len(x), time.time() - start))
+    g.win.statusBar().showMessage("%d points read (%s s)" % (len(x), time.time() - start))
     return np.vstack([x, y]).T
 
 def save(clusters):
     d = QFileDialog.getExistingDirectory(caption="Save DBScan results to a directory. Create or select a folder", directory=g.settings['last_dir'])
     t = time.time()
     save_clusters(os.path.join(d, "Clusters.txt"), clusters)
-    win.statusBar().showMessage("Cluster Data saved. Calculating distances...")
+    g.win.statusBar().showMessage("Cluster Data saved. Calculating distances...")
     centers = [c.center for c in clusters]
     save_distances(os.path.join(d, "Distances.txt"), centers)
-    win.statusBar().showMessage("Distances saved.")
+    g.win.statusBar().showMessage("Distances saved.")
     x, y = np.transpose(centers)
     if simulateCheck.isChecked():
-        win.statusBar().showMessage("Generating simulated centers...")
+        g.win.statusBar().showMessage("Generating simulated centers...")
         simulateCenters(os.path.join(d, "Simulated_distances.txt"), len(centers), [min(x), max(x)], [min(y), max(y)])
-    win.statusBar().showMessage("DBScan Complete. (%s s)" % (time.time() - t))
+    g.win.statusBar().showMessage("DBScan Complete. (%s s)" % (time.time() - t))
 
 def main():
-    win.setCentralWidget(widg2)
     g.settings.update(epsilon=epsilon_spin.value(), min_neighbors=min_neighbors_spin.value(), min_density=min_density_spin.value())
     fnames = [file_list.item(i).text() for i in range(file_list.count())]
     points = read_files(fnames)
@@ -97,10 +99,40 @@ def main():
         clusters.append(Cluster(clusts[i]))
         QApplication.processEvents()
         if i % 10 == 0:
-            win.statusBar().showMessage("Analyzed %d clusters of %d" % (i, len(clusts)))
-    win.statusBar().showMessage("Clusters Analyzed (%s s)" % (time.time() - t))
+            g.win.statusBar().showMessage("Analyzed %d clusters of %d" % (i, len(clusts)))
+    g.win.statusBar().showMessage("Clusters Analyzed (%s s)" % (time.time() - t))
     save(clusters)
     clusterButton.setEnabled(True)
+
+def backPressed():
+    g.win.setGeometry(QRect(50, 50, 400, 300))
+    g.widgetStack.setCurrentWidget(g.fileWidget)
+    g.widgetStack.removeWidget(g.pointWidget)
+
+def plotPressed():
+    g.settings.update(epsilon=epsilon_spin.value(), min_neighbors=min_neighbors_spin.value(), min_density=min_density_spin.value())
+    fnames = [file_list.item(i).text() for i in range(file_list.count())]
+    points = read_files(fnames)
+    if len(points) == 0:
+        print("No points collected. Make sure your files are properly formatted")
+        return
+    
+    #g.pointWidget = PointWidget(points)
+    g.pointWidget = Canvas()#visuals=[])
+    g.pointWidget.markers.append(PointVisual(name = '+'.join([os.path.basename(f) for f in fnames]), color=QColor(1, 1, 1), points=points))
+    pointParent = QWidget()
+    backRow = QHBoxLayout()
+    pointLayout = QVBoxLayout()
+    pointParent.setLayout(pointLayout)
+    backButton = QPushButton("Back")
+    backButton.pressed.connect(backPressed)
+    backRow.addWidget(backButton)
+    backRow.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding))
+    pointLayout.addWidget(g.pointWidget.native)
+    pointLayout.addLayout(backRow)
+    g.widgetStack.addWidget(pointParent)
+    g.widgetStack.setCurrentWidget(pointParent)
+    g.win.setGeometry(QRect(50, 50, 1200, 900))
 
 def add_file(filename):
     for i in range(file_list.count()):
@@ -113,10 +145,10 @@ def remove_file(item):
     file_list.takeItem(file_list.row(item))
 
 def get_files():
-    files = QFileDialog.getOpenFileNames(win, caption="Select point files to cluster", directory=g.settings['last_dir'])
+    files = QFileDialog.getOpenFileNames(g.win, caption="Select point files to cluster", directory=g.settings['last_dir'])
     if len(files) == 0:
         return
-    g.settings['last_dir'] = os.path.dirname(files[0])
+    g.settings['last_dir'] = files[0]
     for i in files:
         add_file(i)
 
@@ -149,11 +181,14 @@ class MainWindowEventEater(QObject):
 mainWindowEventEater = MainWindowEventEater()
 
 if __name__ == '__main__':
-    win = QMainWindow()
-    widg = QWidget()
-    win.setCentralWidget(widg)
-    win.setAcceptDrops(True)
-    ly = QFormLayout(widg)
+    g.win = QMainWindow()
+    g.win.setGeometry(QRect(50, 50, 400, 300))
+    g.fileWidget = QWidget()
+    g.widgetStack = QStackedWidget()
+    g.win.setCentralWidget(g.widgetStack)
+    g.widgetStack.addWidget(g.fileWidget)
+    g.win.setAcceptDrops(True)
+    ly = QFormLayout(g.fileWidget)
     file_list = QListWidget()
     file_list.contextMenuEvent = lambda ev: get_files()
     file_list.itemDoubleClicked.connect(remove_file)
@@ -162,9 +197,16 @@ if __name__ == '__main__':
     epsilon_spin = pg.SpinBox(value=g.settings['epsilon'])
     min_neighbors_spin = pg.SpinBox(value=g.settings['min_neighbors'], int=True, step=1)
     min_density_spin = pg.SpinBox(value=g.settings['min_density'], int=True, step=1)
+    plotButton = QPushButton("Plot Points")
     simulateCheck = QCheckBox("Simulate Center Proximities")
-    clusterButton = QPushButton("Start Clustering")
+    clusterButton = QPushButton("Run DBScan")
     clusterButton.pressed.connect(main)
+    plotButton.pressed.connect(plotPressed)
+
+    buttonRow = QHBoxLayout()
+    buttonRow.addItem(QSpacerItem(60, 0, QSizePolicy.Expanding))
+    buttonRow.addWidget(plotButton)
+    buttonRow.addWidget(clusterButton)
 
     ly.addRow("Files", file_list)
     ly.addWidget(add_files_button)
@@ -172,10 +214,10 @@ if __name__ == '__main__':
     ly.addRow("Minimum neighbors to consider a point", min_neighbors_spin)
     ly.addRow("Minimum Cluster Density", min_density_spin)
     ly.addWidget(simulateCheck)
-    ly.addWidget(clusterButton)
+    ly.addRow(buttonRow)
 
-    win.installEventFilter(mainWindowEventEater)
-    win.setWindowTitle("DBScan Clustering")
-    win.closeEvent = close_and_save
-    win.show()
+    g.win.installEventFilter(mainWindowEventEater)
+    g.win.setWindowTitle("DBScan Clustering")
+    g.win.closeEvent = close_and_save
+    g.win.show()
     QApplication.instance().exec_()

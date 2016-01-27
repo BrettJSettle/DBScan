@@ -2,7 +2,7 @@ import numpy as np
 from PyQt4.QtGui import QFileDialog, QApplication, QInputDialog
 import fileinput
 
-format_options = ['S1', 'S5', 'S10', 'S20', 'i1', 'i4', 'i8', 'f4', 'f8', 'f16']
+format_options = ['S1', 'S5', 'S10', 'S20', 'i1', 'i4', 'i8', 'f4', 'f8']
 
 format_dict = \
 {'Channel Name': 'S20',
@@ -34,7 +34,7 @@ format_dict = \
 def get_format(name):
 	if name in format_dict:
 		return format_dict[name]
-	form = QInputDialog.getItem(None, "Format for %s" % name, 'Pick a format', format_options)
+	form = QInputDialog.getItem(None, "Format for %s" % name, 'Pick a format: (S for string, i for integer, f for floating point):', format_options)
 	for line in fileinput.input():
 		if line.endswith('# end'):
 			print('\n\n} # end')
