@@ -1,5 +1,5 @@
 import numpy as np
-from PyQt4.QtGui import QFileDialog, QApplication, QInputDialog
+from qtpy.QtWidgets import QFileDialog, QApplication, QInputDialog
 import fileinput
 
 format_options = ['S1', 'S5', 'S10', 'S20', 'i1', 'i4', 'i8', 'f4', 'f8']

@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from PyQt4.QtCore import pyqtSignal as Signal
+from qtpy.QtCore import Signal
 from vispy import app
 from vispy import gloo
 from vispy.visuals.shaders import ModularProgram

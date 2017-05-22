@@ -5,8 +5,9 @@
 @Date: August 6, 2015
 """
 import os,sys,inspect
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from qtpy.QtGui import *
+from qtpy.QtWidgets import *
+from qtpy.QtCore import *
 import global_vars as g
 g.settings = g.Settings()
 import pyqtgraph as pg
