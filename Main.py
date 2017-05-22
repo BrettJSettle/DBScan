@@ -149,8 +149,11 @@ def get_files():
     files = QFileDialog.getOpenFileNames(g.win, caption="Select point files to cluster", directory=g.settings['last_dir'])
     if len(files) == 0:
         return
+    if type(files) == tuple:
+        files = files[0]
     g.settings['last_dir'] = files[0]
     for i in files:
+        print(i)
         add_file(i)
 
 def close_and_save(ev):
